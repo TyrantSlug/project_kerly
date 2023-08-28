@@ -1,0 +1,194 @@
+package kr.co.tj.item;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/item-service")
+public class ItemController {
+
+	@Autowired
+	private ItemService itemService;
+	
+	
+	 @GetMapping("/username/username")
+	  public ResponseEntity<?> findByUsername(@RequestParam("username") String username, @RequestParam("pageNum") int pageNum) {
+	     Map<String, Object> map = new HashMap<>();
+
+	     try {
+	        List<ItemDTO> page = itemService.findByUsername(username, pageNum);
+	        map.put("result", page);
+	        return ResponseEntity.ok().body(page);
+	     } catch (Exception e) {
+	        e.printStackTrace();
+	        map.put("result", "에러");
+	        return ResponseEntity.badRequest().body(map);
+	     }
+	  }
+	
+	
+
+	// 키워드로 상품 검색
+	@GetMapping("/search/keyword")
+	public ResponseEntity<?> search(@RequestParam("keyword") String keyword, @RequestParam("pageNum") int pageNum) {
+		Map<String, Object> map = new HashMap<>();
+
+		if (keyword == null 
+				|| keyword == "") {
+			return ResponseEntity.badRequest().body("키워드가 입력되지 않았습니다.");
+		}
+
+		try {
+			List<ItemDTO> page = itemService.search(keyword, pageNum);
+			map.put("result", page);
+			return ResponseEntity.ok().body(page);
+		} catch (Exception e) {
+			e.printStackTrace();
+			map.put("result", "에러");
+			return ResponseEntity.badRequest().body(map);
+		}
+	}
+
+	// 아이템 타입 별로 리스트 불러오기
+	@GetMapping("/itemtype/itemtype")
+	public ResponseEntity<?> listByItemType(@RequestParam("itemType") String itemType,
+			@RequestParam("pageNum") int pageNum) {
+		Map<String, Object> map = new HashMap<>();
+
+		if (itemType == null || itemType == "") {
+			return ResponseEntity.badRequest().body("해당 품목이 없습니다.");
+		}
+
+		List<ItemDTO> itemList = itemService.findByItemType(itemType, pageNum);
+		map.put("result", itemList);
+
+		return ResponseEntity.ok().body(itemList);
+	}
+
+	// 아이템 삭제하기
+	@DeleteMapping("/item/admin")
+	public ResponseEntity<?> delete(@RequestBody ItemDTO itemDTO) {
+
+		Map<String, Object> map = new HashMap<>();
+
+		Long id = itemDTO.getId();
+
+		if (itemDTO == null || id == null || id == 0L) {
+			map.put("result", "잘못된 정보입니다.");
+			return ResponseEntity.badRequest().body(map);
+		}
+
+		try {
+			itemService.delete(id);
+			map.put("result", "삭제 성공이요");
+			return ResponseEntity.ok().body(map);
+		} catch (Exception e) {
+			e.printStackTrace();
+			map.put("result", "삭제 실패");
+			return ResponseEntity.badRequest().body(map);
+		}
+	}
+
+
+	// 아이템 정보 수정
+	@PutMapping("/item/admin/update")
+	public ResponseEntity<?> update(@RequestBody ItemDTO itemDTO) {
+
+		Map<String, Object> map = new HashMap<>();
+
+		if (itemDTO == null 
+				|| itemDTO.getItemName() == null 
+				|| itemDTO.getPrice() == 0 
+				|| itemDTO.getEa() == 0
+				|| itemDTO.getItemDescribe() == null 
+				|| itemDTO.getItemDescribe() == "" 
+				|| itemDTO.getItemType() == null
+				|| itemDTO.getItemType() == "") {
+			map.put("result", "잘못된 정보입니다");
+			return ResponseEntity.badRequest().body(map);
+		}
+
+		try {
+			itemDTO = itemService.updateItem(itemDTO);
+			map.put("result", itemDTO);
+			return ResponseEntity.ok().body(map);
+		} catch (Exception e) {
+			e.printStackTrace();
+			map.put("result", "수정 시루떡");
+			return ResponseEntity.badRequest().body(map);
+		}
+
+	}
+
+	// 아이템 정보 불러오기
+	@GetMapping("/id/{id}")
+	public ResponseEntity<?> findById(@PathVariable("id") Long id) {
+
+		Map<String, Object> map = new HashMap<>();
+
+		if (id == null) {
+			map.put("result", "잘못된 정보입니다.");
+			return ResponseEntity.badRequest().body(map);
+		}
+
+		try {
+			ItemDTO dto = itemService.findById(id);
+			map.put("result", dto);
+			return ResponseEntity.ok().body(map);
+		} catch (Exception e) {
+			e.printStackTrace();
+			map.put("result", "에러 발생");
+			return ResponseEntity.badRequest().body(map);
+		}
+	}
+
+	
+	
+	// 아이템 등록하기
+	@PostMapping("/item/manager")
+	public ResponseEntity<?> createItem(@RequestBody ItemDTO itemDTO) {
+
+		Map<String, Object> map = new HashMap<>();
+
+		if (itemDTO.getItemName() == null 
+				|| itemDTO.getPrice() == 0 
+				|| itemDTO.getDiscount() <= -1
+				|| itemDTO.getUsername() == null 
+				|| itemDTO.getUsername().equals("") 
+				|| itemDTO.getEa() <= 0
+				|| itemDTO.getItemDescribe() == null 
+				|| itemDTO.getItemDescribe().equals("")
+				|| itemDTO.getItemType() == null 
+				|| itemDTO.getItemType().equals("")) {
+
+			map.put("result", "상품 입력 실패1");
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(map);
+		}
+
+		try {
+			itemDTO = itemService.createItem(itemDTO);
+			map.put("result", itemDTO);
+			return ResponseEntity.ok().body(map);
+		} catch (Exception e) {
+			e.printStackTrace();
+			map.put("result", "등록 실패");
+			return ResponseEntity.badRequest().body(map);
+		}
+
+	}
+
+}
