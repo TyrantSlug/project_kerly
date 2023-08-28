@@ -1,0 +1,65 @@
+name: Java and Flutter CI/CD
+
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+    branches:
+      - dev
+
+permissions:
+  contents: read
+
+jobs:
+  build-maven:
+    runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        project: [kerly_docker]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: "11"
+          distribution: "temurin"
+
+      - name: Build with Maven
+        working-directory: ${{ matrix.project }}
+        run: mvn clean compile package -DskipTests=true
+
+      - name: docker login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build 
+        working-directory: ${{ matrix.project }}
+        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.project }}:1.0 .
+
+      - name: push
+        working-directory: ${{ matrix.project }}
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.project }}:1.0
+
+
+  deploy:
+    needs: [build-maven]
+    name: deploy
+    runs-on: [self-hosted, label-1]
+    steps:
+      - name: login dockerhub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Start Docker Compose services
+        run: |
+          docker stop ${{ matrix.project }} && docker rm ${{ matrix.project }} && docker rmi ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.project }}:1.0
+          docker run -d --name ${{ matrix.project }} --network kerly-network-v1 -e "SPRING_DATASOURCE_URL=jdbc:mysql://kerly-mysql:3306/kerly?serverTimezone=Asia/Seoul" -p 9007:9007 ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.project }}:1.0
