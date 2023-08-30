@@ -26,5 +26,7 @@ public class BoardDTO {
 	private String name;
 	
 	private String username;
+	
+	private Long bid;
 
 }

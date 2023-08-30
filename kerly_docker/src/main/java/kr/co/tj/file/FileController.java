@@ -45,7 +45,7 @@ public class FileController {
 		}
 	}
 
-	// ?? url 가져오는 코드인데 사용처 존재 유무 확인 필요
+	// url 가져오는 코드
 	@GetMapping("/id/{id}")
 	public ResponseEntity<?> findById(@PathVariable("id") Long id) {
 		Map<String, Object> map = new HashMap<>();
