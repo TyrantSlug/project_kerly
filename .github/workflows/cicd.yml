@@ -61,6 +61,5 @@ jobs:
 
       - name: Start Docker services
         run: |
-           docker stop ${{ matrix.project }} || true  
-           docker rm ${{ matrix.project }} || true   
-           docker run -d --name ${{ matrix.project }} --network kerly-network-v1 -e "SPRING_DATASOURCE_URL=jdbc:mysql://kerly-mysql:3306/kerly?serverTimezone=Asia/Seoul" -p 9007:9007 ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.project }}:1.0
+          docker-compose -f ~/kerly.yml down
+          docker-compose -f ~/kerly.yml up -d
